@@ -7,17 +7,19 @@ import { Switch } from "./ui/switch";
 import { Textarea } from "./ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 
+
 interface SettingsProps {
-  onUpdateUserName: (name: string) => void;
-  userName: string;
+  // onUpdateUserName: (name: string) => void;
+  // userName: string;
   habitTrackerView: 'monthly' | 'yearly';
   onUpdateHabitTrackerView: (view: 'monthly' | 'yearly') => void;
 }
 
-export function Settings({ onUpdateUserName, userName, habitTrackerView, onUpdateHabitTrackerView }: SettingsProps) {
+// export function Settings({ onUpdateUserName, userName, habitTrackerView, onUpdateHabitTrackerView }: SettingsProps) {
+export function Settings({ habitTrackerView, onUpdateHabitTrackerView }: SettingsProps) {
   const [darkMode, setDarkMode] = useState(false);
-  const [name, setName] = useState(userName);
-  const [welcomeMessage, setWelcomeMessage] = useState("Track your habits, organize your lists, and stay productive with this Notion-style workspace.");
+  // const [name, setName] = useState(userName);
+  // const [welcomeMessage, setWelcomeMessage] = useState("Track your habits, organize your lists, and stay productive.");
   const { toast } = useToast();
 
   // Toggle dark/light mode
@@ -30,7 +32,9 @@ export function Settings({ onUpdateUserName, userName, habitTrackerView, onUpdat
   }, [darkMode]);
 
   const handleSave = () => {
-    onUpdateUserName(name);
+    
+    // onUpdateUserName(name);
+    
     toast({
       title: "Settings saved",
       description: "Your preferences have been updated.",
@@ -48,6 +52,8 @@ export function Settings({ onUpdateUserName, userName, habitTrackerView, onUpdat
         </div>
 
         <div className="space-y-6">
+
+          {/*
           <div className="space-y-2">
             <Label htmlFor="username">Your Name</Label>
             <Input 
@@ -57,7 +63,9 @@ export function Settings({ onUpdateUserName, userName, habitTrackerView, onUpdat
               placeholder="Enter your name"
             />
           </div>
+          */}
 
+          {/*
           <div className="space-y-2">
             <Label htmlFor="welcome-message">Welcome Message</Label>
             <Textarea 
@@ -68,6 +76,7 @@ export function Settings({ onUpdateUserName, userName, habitTrackerView, onUpdat
               className="min-h-[80px]"
             />
           </div>
+          */}
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">

@@ -110,7 +110,7 @@ export async function listsHandler(req: Request): Promise<Response> {
     }
   }
 
-  // DELETE /api/entries/:id
+  // DELETE /api/lists/:id
   if (method === "DELETE" && pathParts.length === 3) {
 
     const id = pathParts[2] ? parseInt(pathParts[2], 10) : null;

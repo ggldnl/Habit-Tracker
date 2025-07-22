@@ -8,7 +8,12 @@ const isFreshDatabase = !existsSync(DB_PATH);
 
 const db = new Database(DB_PATH);
 
-// Initialize DB schema
+// Helper to fetch a single row
+function getRowById(table: string, idField: string, id: number) {
+  return db.query(`SELECT * FROM ${table} WHERE ${idField} = ?`).get(id);
+}
+
+// Initialize lists DB schema
 db.run(`
 CREATE TABLE IF NOT EXISTS colors (
   color_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,11 +40,6 @@ CREATE TABLE IF NOT EXISTS entries (
   FOREIGN KEY (list_id) REFERENCES lists(list_id) ON DELETE CASCADE
 )
 `);
-
-// Helper to fetch a single row
-function getRowById(table: string, idField: string, id: number) {
-  return db.query(`SELECT * FROM ${table} WHERE ${idField} = ?`).get(id);
-}
 
 // DB helper functions
 
@@ -169,6 +169,138 @@ export function clearList(list_id: number) {
   }
 }
 
+// Initialize habit tracker DB schema
+db.run(`
+CREATE TABLE IF NOT EXISTS habits (
+  habit_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  habit_name TEXT NOT NULL,
+  habit_color INTEGER DEFAULT 0,
+  FOREIGN KEY (habit_color) REFERENCES colors(color_id)
+)
+`);
+
+db.run(`
+CREATE TABLE IF NOT EXISTS days (
+  day_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  habit_id INTEGER NOT NULL,
+  day_value TEXT NOT NULL,
+  day_completion REAL NOT NULL,
+  FOREIGN KEY (habit_id) REFERENCES habits(habit_id) ON DELETE CASCADE
+)
+`);
+
+export function getAllHabits() {
+  return db.query("SELECT * FROM habits").all();
+}
+
+export function getAllDays() {
+  return db.query("SELECT * FROM days").all();
+}
+
+export function addHabit(habit_name: string, habit_color: number = 1) {
+  try {
+    const stmt = db.prepare("INSERT INTO habits (habit_name, habit_color) VALUES (?, ?)");
+    const result = stmt.run(habit_name, habit_color);
+    return getRowById("habits", "habit_id", result.lastInsertRowid as number);
+  } catch {
+    return null;
+  }
+}
+
+export function addDay(habit_id: number, day_value: string, day_completion: number = 1.0) {
+  try {
+    const stmt = db.prepare("INSERT INTO days (day_id, day_value, day_completion) VALUES (?, ?, ?)");
+    const result = stmt.run(habit_id, day_value, day_completion ? 1 : 0);
+    return getRowById("days", "day_id", result.lastInsertRowid as number);
+  } catch {
+    return null;
+  }
+}
+
+export function updateDayValue(day_id: number, new_value: string = "01/01/1999") {
+  try {
+    db.query("UPDATE days SET day_completion = ? WHERE day_id = ?").run(new_value, day_id);
+    return getRowById("days", "day_id", day_id);
+  } catch {
+    return null;
+  }
+}
+
+export function updateDayCompletion(day_id: number, new_completion: number = 1.0) {
+  try {
+    db.query("UPDATE days SET day_completion = ? WHERE day_id = ?").run(new_completion, day_id);
+    return getRowById("days", "day_id", day_id);
+  } catch {
+    return null;
+  }
+}
+
+export function updateHabitName(habit_id: number, new_name: string) {
+  try {
+    db.query("UPDATE habits SET habit_name = ? WHERE habit_id = ?").run(new_name, habit_id);
+    return getRowById("habits", "habit_id", habit_id);
+  } catch {
+    return null;
+  }
+}
+
+export function updateHabitColor(habit_id: number, color_id: number) {
+  try {
+    db.query("UPDATE habits SET habit_color = ? WHERE habit_id = ?").run(color_id, habit_id);
+    return getRowById("habits", "habit_id", habit_id);
+  } catch {
+    return null;
+  }
+}
+
+export function deleteHabit(habit_id: number) {
+  try {
+    const habit = getRowById("habits", "habit_id", habit_id);
+    db.query("DELETE FROM habits WHERE habit_id = ?").run(habit_id);
+    return habit;
+  } catch {
+    return null;
+  }
+}
+
+export function deleteDay(day_id: number) {
+  try {
+    const day = getRowById("days", "day_id", day_id);
+    db.query("DELETE FROM days WHERE day_id = ?").run(day_id);
+    return day;
+  } catch {
+    return null;
+  }
+}
+
+export function clearHabit(habit_id: number) {
+  try {
+    const result = db.query("DELETE FROM days WHERE habit_id = ?").run(habit_id);
+    return result.changes;
+  } catch {
+    return 0;
+  }
+}
+
+// Seed database
+
+function getRandomDate(year: number, maxMonth: number, maxDay: number): string {
+    
+  const month = Math.floor(Math.random() * maxMonth) + 1;
+  let daysInMonth = new Date(year, month, 0).getDate();
+  if (month === maxMonth && maxDay < daysInMonth) {
+    daysInMonth = maxDay;
+  }
+
+  const day = Math.floor(Math.random() * daysInMonth) + 1;
+
+  // Format day and month with leading zeros
+  const dayStr = day.toString().padStart(2, '0');
+  const monthStr = month.toString().padStart(2, '0');
+
+  return `${dayStr}/${monthStr}/${year}`;
+}
+
 function seedDatabase() {
 
   // Insert colors
@@ -188,13 +320,46 @@ function seedDatabase() {
   const color_purple2 = addColor("purple2", "#c085fd");
 
   // Insert two sample lists
-  const list = addList("🧾 Shopping List", 6);
-  console.log("Sample list created: ", list);
-  if (list) {
-    addEntry(list.list_id, "🥛 Milk");
-    addEntry(list.list_id, "🍞 Bread");
-    addEntry(list.list_id, "🥚 Egg");
+  const list_1 = addList("🧾 Shopping List", 10);
+  console.log("Sample list created: ", list_1);
+  if (list_1) {
+    addEntry(list_1.list_id, "🥛 Milk");
+    addEntry(list_1.list_id, "🍞 Bread");
+    addEntry(list_1.list_id, "🥐 ~Quaso~");
   }
+
+  const list_2 = addList("🍿 Movies", 6);
+  console.log("Sample list created: ", list_2);
+  if (list_2) {
+    addEntry(list_2.list_id, "👽 Alien (1979)");
+    addEntry(list_2.list_id, "🔫 Aliens (1986)");
+    addEntry(list_2.list_id, "⚰️ Alien³ (1992)");
+    addEntry(list_2.list_id, "🧬 Alien: Resurrection (1997)");
+    addEntry(list_2.list_id, "🗿 Prometheus (2012)");
+    addEntry(list_2.list_id, "🤖 Alien: Covenant (2017)");
+    addEntry(list_2.list_id, "🕳️ Alien: Romulus (2025)");
+  }
+
+  // Insert two random habits
+  // TODO check cap date for random generation, should not exceed current date
+  const habit_1 = addHabit("Reinforcement Learning", 6);
+  console.log("Sample habit created: ", habit_1);
+  if (habit_1) {
+    const num_days_1 = Math.floor(Math.random() * 30) + 1;
+    for (let i = 0; i < num_days_1; i++) {
+      addDay(habit_1.habit_id, getRandomDate(1999, 12, 31));
+    }
+  }
+
+  const habit_2 = addHabit("Robotics", 10);
+  console.log("Sample habit created: ", habit_2);
+  if (habit_2) {
+    const num_days_2 = Math.floor(Math.random() * 30) + 1;
+    for (let i = 0; i < num_days_2; i++) {
+      addDay(habit_1.habit_id, getRandomDate(1999, 12, 31));
+    }
+  }
+
 
   console.log("Seeded database with sample data.");
 }

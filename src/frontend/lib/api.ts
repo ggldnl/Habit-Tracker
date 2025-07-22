@@ -1,4 +1,4 @@
-import { List, Entry, Color } from "./types"
+import { List, Entry, Color, Habit, Day } from "./types"
 
 // Adjust this to your Bun backend address
 const BASE_URL = "http://localhost:3000/api";
@@ -10,7 +10,6 @@ interface ApiResponse<T> {
   error?: string;
 }
 
-// Corrected functions
 export async function fetchLists(): Promise<List[]> {
   const res = await fetch(`${BASE_URL}/lists`);
   if (!res.ok) throw new Error("Failed to fetch lists");
@@ -137,8 +136,8 @@ export async function addEntry(listId: number, text: string, checked: boolean = 
   return response.data!;
 }
 
-export async function updateEntryText(list_id: number, entry_id: number, new_text: string): Promise<List> {
-  const res = await fetch(`${BASE_URL}/entries/${list_id}/text`, {
+export async function updateEntryText(entry_id: number, new_text: string): Promise<List> {
+  const res = await fetch(`${BASE_URL}/entries/${entry_id}/text`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ entry_text: new_text }),
@@ -214,6 +213,152 @@ export async function deleteColor(id: number): Promise<Color> {
   const response: ApiResponse<Color> = await res.json();
   if (!response.success) {
     throw new Error(response.error || "Failed to delete color");
+  }
+  
+  return response.data!;
+}
+
+export async function fetchHabits(): Promise<Habit[]> {
+  const res = await fetch(`${BASE_URL}/habits`);
+  if (!res.ok) throw new Error("Failed to fetch habits");
+  
+  const response: ApiResponse<Habit[]> = await res.json();
+  if (!response.success) {
+    throw new Error(response.error || "Failed to fetch habits");
+  }
+  
+  return response.data || [];
+}
+
+export async function fetchDays(): Promise<Day[]> {
+  const res = await fetch(`${BASE_URL}/days`);
+  if (!res.ok) throw new Error("Failed to fetch days");
+  
+  const response: ApiResponse<Day[]> = await res.json();
+  if (!response.success) {
+    throw new Error(response.error || "Failed to fetch days");
+  }
+  
+  return response.data || [];
+}
+
+export async function addHabit(name: string, color: number): Promise<Habit> {
+  const res = await fetch(`${BASE_URL}/habits`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ 
+      habit_name: name,
+      habit_color: color
+    }),
+  });
+  
+  if (!res.ok) throw new Error("Failed to add habit");
+  
+  const response: ApiResponse<Habit> = await res.json();
+  if (!response.success) {
+    throw new Error(response.error || "Failed to add habit");
+  }
+  
+  return response.data!;
+}
+
+export async function updateHabitColor(habit_id: number, new_color: number): Promise<Habit> {
+  const res = await fetch(`${BASE_URL}/habits/${habit_id}/color`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ habit_color: new_color }),
+  });
+  
+  if (!res.ok) throw new Error("Failed to update habit color");
+  
+  const response: ApiResponse<Habit> = await res.json();
+  if (!response.success) {
+    throw new Error(response.error || "Failed to update habit color");
+  }
+  
+  return response.data!;
+}
+
+export async function updateHabitName(habit_id: number, new_name: string): Promise<Habit> {
+  const res = await fetch(`${BASE_URL}/habits/${habit_id}/name`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ habit_name: new_name }),
+  });
+  
+  if (!res.ok) throw new Error("Failed to update habit name");
+  
+  const response: ApiResponse<Habit> = await res.json();
+  if (!response.success) {
+    throw new Error(response.error || "Failed to update habit name");
+  }
+  
+  return response.data!;
+}
+
+export async function deleteHabit(id: number): Promise<Habit> {
+  const res = await fetch(`${BASE_URL}/habits/${id}`, {
+    method: "DELETE",
+  });
+  
+  if (!res.ok) throw new Error("Failed to delete habit");
+  
+  const response: ApiResponse<Habit> = await res.json();
+  if (!response.success) {
+    throw new Error(response.error || "Failed to delete habit");
+  }
+  
+  return response.data!;
+}
+
+export async function addDay(habit_id: number, value: string, completion: number = 1.0): Promise<Day> {
+  const res = await fetch(`${BASE_URL}/days`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      habit_id: habit_id,
+      day_value: value,
+      day_completion: completion
+    }),
+  });
+  
+  if (!res.ok) throw new Error("Failed to add day");
+  
+  const response: ApiResponse<Day> = await res.json();
+  if (!response.success) {
+    throw new Error(response.error || "Failed to add day");
+  }
+  
+  return response.data!;
+}
+
+export async function updateDayValue(day_id: number, new_value: string): Promise<Habit> {
+  const res = await fetch(`${BASE_URL}/days/${day_id}/text`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ day_value: new_value }),
+  });
+  
+  if (!res.ok) throw new Error("Failed to update day text");
+  
+  const response: ApiResponse<Habit> = await res.json();
+  if (!response.success) {
+    throw new Error(response.error || "Failed to update day text");
+  }
+  
+  return response.data!;
+}
+
+export async function deleteDay(id: number): Promise<Day> {
+  const res = await fetch(`${BASE_URL}/days/${id}`, {
+    method: "DELETE",
+  });
+  
+  if (!res.ok) throw new Error("Failed to delete day");
+  
+  const response: ApiResponse<Day> = await res.json();
+  if (!response.success) {
+    throw new Error(response.error || "Failed to delete day");
   }
   
   return response.data!;

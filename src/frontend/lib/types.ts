@@ -16,3 +16,16 @@ export interface Color {
   color_name: string;
   color_value: string;
 }
+
+export interface Habit {
+  habit_id: number;
+  habit_name: string;
+  habit_color: number; 
+}
+
+export interface Day {
+  day_id: number;
+  habit_id: number;
+  day_value: string;
+  day_completion: number;
+}

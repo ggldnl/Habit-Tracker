@@ -209,8 +209,8 @@ export function addHabit(habit_name: string, habit_color: number = 1) {
 
 export function addDay(habit_id: number, day_value: string, day_completion: number = 1.0) {
   try {
-    const stmt = db.prepare("INSERT INTO days (day_id, day_value, day_completion) VALUES (?, ?, ?)");
-    const result = stmt.run(habit_id, day_value, day_completion ? 1 : 0);
+    const stmt = db.prepare("INSERT INTO days (habit_id, day_value, day_completion) VALUES (?, ?, ?)");
+    const result = stmt.run(habit_id, day_value, day_completion);
     return getRowById("days", "day_id", result.lastInsertRowid as number);
   } catch {
     return null;

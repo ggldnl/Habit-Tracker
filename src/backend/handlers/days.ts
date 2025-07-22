@@ -46,8 +46,9 @@ export async function daysHandler(req: Request): Promise<Response> {
       const body = await req.json();
       const { habit_id, day_value, day_completion } = body;
 
-      if (typeof habit_id !== "number" || typeof day_value !== "string" || day_completion != "number") {
-        return createResponse({ success: false, error: "Missing or invalid habit_id or entry_text" }, 400);
+      if (typeof habit_id !== "number" || typeof day_value !== "string" || typeof day_completion != "number") {
+        console.log("All good.")
+        return createResponse({ success: false, error: "Missing or invalid habit_id, day_value or day_completion" }, 400);
       }
 
       const entry = addDay(habit_id, day_value, day_completion);

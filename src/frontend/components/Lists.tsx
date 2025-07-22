@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Plus, X, Edit2 } from "lucide-react";
+import { Plus, X, Edit2, GripVertical } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Checkbox } from "./ui/checkbox";
@@ -34,12 +34,28 @@ export function Lists() {
   const [editName, setEditName] = useState('');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
+  // For drag and drop
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  
+  // For auto-scrolling
+  const scrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
   // For managing input focus
   const inputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   // Load initial data
   useEffect(() => {
     loadData();
+  }, []);
+
+  // Cleanup scroll interval on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollIntervalRef.current) {
+        clearInterval(scrollIntervalRef.current);
+      }
+    };
   }, []);
 
   const loadData = async () => {
@@ -72,6 +88,98 @@ export function Lists() {
     }
   };
 
+  // Auto-scroll functionality
+  const startAutoScroll = (clientY: number) => {
+    const scrollZone = 100; // pixels from edge to trigger scroll
+    const scrollSpeed = 10; // pixels per interval
+    const intervalDelay = 16; // ~60fps
+    
+    const scroll = () => {
+      const viewportHeight = window.innerHeight;
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const documentHeight = document.documentElement.scrollHeight;
+      
+      if (clientY < scrollZone && scrollTop > 0) {
+        // Scroll up
+        window.scrollBy(0, -scrollSpeed);
+      } else if (clientY > viewportHeight - scrollZone && scrollTop + viewportHeight < documentHeight) {
+        // Scroll down
+        window.scrollBy(0, scrollSpeed);
+      }
+    };
+    
+    // Clear any existing interval
+    if (scrollIntervalRef.current) {
+      clearInterval(scrollIntervalRef.current);
+    }
+    
+    // Start new interval
+    scrollIntervalRef.current = setInterval(scroll, intervalDelay);
+  };
+
+  const stopAutoScroll = () => {
+    if (scrollIntervalRef.current) {
+      clearInterval(scrollIntervalRef.current);
+      scrollIntervalRef.current = null;
+    }
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverIndex(index);
+    
+    // Start auto-scroll based on mouse position
+    startAutoScroll(e.clientY);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    stopAutoScroll();
+    
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    const newLists = [...lists];
+    const draggedItem = newLists[draggedIndex];
+    
+    // Remove the dragged item
+    newLists.splice(draggedIndex, 1);
+    
+    // Insert at new position
+    newLists.splice(dropIndex, 0, draggedItem);
+    
+    setLists(newLists);
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    stopAutoScroll();
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  // Add mouse move handler for when dragging outside of drop zones
+  const handleDragMove = (e: React.DragEvent) => {
+    if (draggedIndex !== null) {
+      startAutoScroll(e.clientY);
+    }
+  };
+
   const handleAddList = async () => {
     try {
       // Use a random color from available colors, or default color ID
@@ -83,10 +191,12 @@ export function Lists() {
       
       setLists(prev => [...prev, { ...newList, items: [] }]);
       
+      /*
       toast({
         title: "Success",
         description: "New list created.",
       });
+      */
       
     } catch (error) {
       console.error('Failed to add list:', error);
@@ -138,7 +248,7 @@ export function Lists() {
           : list
       ));
 
-      await updateEntryText(itemId, itemId, text);
+      await updateEntryText(itemId, text);
 
     } catch (error) {
       console.error('Failed to update item:', error);
@@ -212,10 +322,12 @@ export function Lists() {
       
       await deleteEntry(itemId);
 
+      /*
       toast({
         title: "Success",
         description: "Item deleted.",
       });
+      */
 
     } catch (error) {
       console.error('Failed to remove item:', error);
@@ -239,10 +351,12 @@ export function Lists() {
 
       await updateListColor(listId, colorId);
       
+      /*
       toast({
         title: "Success",
         description: "List color updated.",
       });
+      */
       
     } catch (error) {
       console.error('Failed to update list color:', error);
@@ -263,10 +377,12 @@ export function Lists() {
 
       await updateListName(listId, newName);
       
+      /*
       toast({
         title: "Success",
         description: "List name updated.",
       });
+      */
       
     } catch (error) {
       console.error('Failed to update list name:', error);
@@ -299,10 +415,13 @@ export function Lists() {
       setIsEditDialogOpen(false);
       setEditingList(null);
       
+      /*
       toast({
         title: "List deleted",
         description: "The list has been removed.",
       });
+      */
+    
     } catch (error) {
       console.error('Failed to remove list:', error);
       toast({
@@ -341,7 +460,7 @@ export function Lists() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6" onDragOver={handleDragMove}>
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-semibold text-foreground">Lists</h2>
         <Button
@@ -355,84 +474,104 @@ export function Lists() {
       </div>
 
       <div className="space-y-6">
-        {lists.map((list) => {
+        {lists.map((list, index) => {
           const colorValue = getColorValue(list.list_color);
+          const isDragging = draggedIndex === index;
+          const isDropTarget = dragOverIndex === index;
+          
           return (
             <div 
               key={list.list_id} 
+              draggable
+              onDragStart={(e) => handleDragStart(e, index)}
+              onDragOver={(e) => handleDragOver(e, index)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, index)}
+              onDragEnd={handleDragEnd}
               style={{ backgroundColor: `${colorValue}20` }} // 20% opacity
-              className="border border-border rounded-lg p-4"
+              className={`
+                border border-border rounded-lg p-4 transition-all duration-200 cursor-grab active:cursor-grabbing
+                ${isDragging ? 'opacity-50 scale-95' : ''}
+                ${isDropTarget && !isDragging ? 'border-blue-400 border-2 border-dashed' : ''}
+              `}
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-medium">{list.list_name}</h3>
-                <div className="flex items-center space-x-2">
-                  <Dialog open={isEditDialogOpen && editingList?.list_id === list.list_id} onOpenChange={(open) => {
-                    setIsEditDialogOpen(open);
-                    if (!open) {
-                      setEditingList(null);
-                    }
-                  }}>
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => startEditing(list)}
-                        className="hover:bg-sidebar-hover"
-                      >
-                        <Edit2 size={14} />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Edit List</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="text-sm font-medium text-foreground">Name</label>
-                          <Input
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            className="mt-2 focus:bg-sidebar-hover hover:bg-sidebar-hover focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 transition-colors duration-150"
-                            placeholder="Enter list name..."
-                          />
-                        </div>
-                        <div>
-                          <div className="grid grid-cols-5 gap-2">
-                            {colors.map((color) => (
-                              <button
-                                key={color.color_id}
-                                onClick={() => setEditColor(color.color_id.toString())}
-                                style={{ backgroundColor: color.color_value }}
-                                className={`
-                                  w-6 h-6 rounded-full border-2
-                                  ${editColor === color.color_id.toString() ? 'border-foreground' : 'border-transparent'}
-                                  hover:scale-110 transition-transform
-                                `}
-                              />
-                            ))}
+              <div className="flex items-center mb-4">
+                {/* Drag handle */}
+                <div className="flex items-center mr-3 text-muted-foreground hover:text-foreground transition-colors">
+                  <GripVertical size={20} />
+                </div>
+                
+                <div className="flex items-center justify-between flex-1">
+                  <h3 className="font-medium">{list.list_name}</h3>
+                  <div className="flex items-center space-x-2">
+                    <Dialog open={isEditDialogOpen && editingList?.list_id === list.list_id} onOpenChange={(open) => {
+                      setIsEditDialogOpen(open);
+                      if (!open) {
+                        setEditingList(null);
+                      }
+                    }}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => startEditing(list)}
+                          className="hover:bg-sidebar-hover"
+                        >
+                          <Edit2 size={14} />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Edit List</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-sm font-medium text-foreground">Name</label>
+                            <Input
+                              value={editName}
+                              onChange={(e) => setEditName(e.target.value)}
+                              className="mt-2 focus:bg-sidebar-hover hover:bg-sidebar-hover focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 transition-colors duration-150"
+                              placeholder="Enter list name..."
+                            />
+                          </div>
+                          <div>
+                            <div className="grid grid-cols-5 gap-2">
+                              {colors.map((color) => (
+                                <button
+                                  key={color.color_id}
+                                  onClick={() => setEditColor(color.color_id.toString())}
+                                  style={{ backgroundColor: color.color_value }}
+                                  className={`
+                                    w-6 h-6 rounded-full border-2
+                                    ${editColor === color.color_id.toString() ? 'border-foreground' : 'border-transparent'}
+                                    hover:scale-110 transition-transform
+                                  `}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex justify-between space-x-4">
+                            <Button
+                              variant="destructive"
+                              onClick={() => handleRemoveList(list.list_id)}
+                            >
+                              <X size={14} className="mr-1" /> Delete List
+                            </Button>
+                            <Button
+                              onClick={handleSaveChanges}
+                              className="flex-1"
+                            >
+                              Save Changes
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex justify-between space-x-4">
-                          <Button
-                            variant="destructive"
-                            onClick={() => handleRemoveList(list.list_id)}
-                          >
-                            <X size={14} className="mr-1" /> Delete List
-                          </Button>
-                          <Button
-                            onClick={handleSaveChanges}
-                            className="flex-1"
-                          >
-                            Save Changes
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-0.5">
+              <div className="space-y-0.5 ml-8">
                 {list.items.map((item) => {
                   const inputKey = `${list.list_id}-${item.entry_id}`;
                   return (

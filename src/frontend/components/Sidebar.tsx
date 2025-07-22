@@ -6,10 +6,11 @@ interface SidebarProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
   tabs: Array<{ id: string; name: string; emoji?: string }>;
-  userName: string;
+  // userName: string;
 }
 
-export function Sidebar({activeTab, onTabChange, tabs, userName }: SidebarProps) {
+// export function Sidebar({activeTab, onTabChange, tabs, userName }: SidebarProps) {
+export function Sidebar({activeTab, onTabChange, tabs }: SidebarProps) {
   const currentDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -31,7 +32,10 @@ export function Sidebar({activeTab, onTabChange, tabs, userName }: SidebarProps)
           <div className="p-4 border-b border-border">
             <div className="flex items-center justify-between">
                 <div>
+                  {/*
                   <h1 className="font-semibold text-foreground">Welcome {userName}</h1>
+                  */}
+                  <h1 className="font-semibold text-foreground">Welcome</h1>
                   <p className="text-sm text-muted-foreground mt-1">{currentDate}</p>
                 </div>
             </div>

@@ -363,3 +363,35 @@ export async function deleteDay(id: number): Promise<Day> {
   
   return response.data!;
 }
+
+export async function clearHabit(id: number): Promise<number> {
+  const res = await fetch(`${BASE_URL}/habits/${id}/clear`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" }
+  });
+  
+  if (!res.ok) throw new Error("Failed to clear habit");
+  
+  const response: ApiResponse<number> = await res.json();
+  if (!response.success) {
+    throw new Error(response.error || "Failed to clear habit");
+  }
+  
+  return response.data!;
+}
+
+export async function clearList(id: number): Promise<number> {
+  const res = await fetch(`${BASE_URL}/lists/${id}/clear`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" }
+  });
+  
+  if (!res.ok) throw new Error("Failed to clear list");
+  
+  const response: ApiResponse<number> = await res.json();
+  if (!response.success) {
+    throw new Error(response.error || "Failed to clear list");
+  }
+  
+  return response.data!;
+}

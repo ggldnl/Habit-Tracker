@@ -91,6 +91,17 @@ export async function listsHandler(req: Request): Promise<Response> {
       }
     }
 
+    if (action === "clear") {
+      try {
+        const updated = clearList(id);
+        return updated
+          ? createResponse({ success: true, data: updated })
+          : createResponse({ success: false, error: "Failed to update list" }, 500);
+      } catch {
+        return createResponse({ success: false, error: "Invalid JSON body" }, 400);
+      }
+    }
+
     if (action === "color") {
       try {
         const body = await req.json();

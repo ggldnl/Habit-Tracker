@@ -163,6 +163,7 @@ export function deleteEntry(entry_id: number) {
 export function clearList(list_id: number) {
   try {
     const result = db.query("DELETE FROM entries WHERE list_id = ?").run(list_id);
+    console.log("Result clear list: ", result)
     return result.changes;
   } catch {
     return 0;

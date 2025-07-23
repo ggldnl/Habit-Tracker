@@ -91,6 +91,17 @@ export async function habitsHandler(req: Request): Promise<Response> {
       }
     }
 
+    if (action === "clear") {
+      try {
+        const updated = clearHabit(id);
+        return updated
+          ? createResponse({ success: true, data: updated })
+          : createResponse({ success: false, error: "Failed to update habit" }, 500);
+      } catch {
+        return createResponse({ success: false, error: "Invalid JSON body" }, 400);
+      }
+    }
+
     if (action === "color") {
       try {
         const body = await req.json();
